@@ -25,9 +25,9 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            ghcr.io/la-cc/k8s-pg-s3-cronjob
+            ghcr.io/la-cc/k8s-pg-to-s3-cronjob
           labels: |
-            org.opencontainers.image.title="K8s PG S3 Backup Cronjob"
+            org.opencontainers.image.title="K8s PG to S3 Backup Cronjob"
           tags: |
             type=schedule
             type=ref,event=tag
