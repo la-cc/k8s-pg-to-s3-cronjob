@@ -52,8 +52,11 @@ upload_encrypted_files() {
             echo "Upload successful: $file"
             # Optionally, remove the local file to save space
             rm "$file"
-            # Call push_to_webhook_endpoint function to notify the webhook about the upload
-            push_to_webhook_endpoint "$file"
+            # Check if ENABLE_WEBHOOK_ENDPOINT is set to true before calling push_to_webhook_endpoint
+            if [ "$ENABLE_WEBHOOK_ENDPOINT" = "true" ]; then
+                # Call push_to_webhook_endpoint function to notify the webhook about the upload
+                push_to_webhook_endpoint "$file"
+            fi
         else
             echo "Error during upload of: $file"
         fi
