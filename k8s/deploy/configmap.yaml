@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pg-backup-config
+data:
+  AWS_S3_ENDPOINT_URL: "https://s3.de.io.cloud.ovh.net/"
+  AWS_S3_BUCKET: "replace-me"
+  DATABASE_USER: "replace-me"
+  DATABASE_HOSTNAME: "replace-me"
+  DATABASE_NAMES: "replace-me"
+  DATABASE_PORT: "5432" #default
+  WEBHOOK_ENDPOINT: ""
+  ENABLE_WEBHOOK_ENDPOINT: "true"

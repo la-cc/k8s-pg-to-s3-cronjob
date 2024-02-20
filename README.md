@@ -1,20 +1,40 @@
 # CronJob: PostgreSQL Backup to S3-Compatible Object Storage with Encryption and Webhook Notification
 
-This README explains how to use the provided Dockerfile and shell script to back up databases to any S3-compatible object storage, with encryption and webhook notifications for each successful upload.
+This README explains how to use the provided Dockerfile and shell script to back up databases to any S3-compatible object storage, with encryption and webhook notifications for each successful upload. But this repo has also a Kubernetes deployment and helm chart for the same purpose.
+
+![Image description](assets/images/overview.gif)
+I've been on the lookout for a tool that caters to a seemingly straightforward use case, yet found none that could:
+
+1. Create a dump of multiple PostgreSQL databases
+2. Compress and encrypt this dump on the client side
+3. Push it to an object storage endpoint that supports WriteOnceReadMany (WORM) and allows for defined retention times
+4. Implement a Dead Man's Switch that trigger a webhook with every successful upload to an S3 bucket
 
 ## Preparation Steps
 
-WIP!!!
-DIAGRAM TBD!!!
+You will need to have the following in place before you can use this tool:
 
-1. Create a user in the S3-compatible object storage service.
-2. Configure the AWS CLI with the user's access key and secret key.
-3. Create an S3 bucket with object lock enabled.
-4. Configure object lock for the bucket.
-5. Verify the object lock configuration.
-6. View the object lock retention configuration.
-7. Set up a webhook endpoint for notifications.
-8. Create PostgreSQL databases that should be backup up.
+**PostgreSQL:**
+
+- Host: postgresql....
+- Port: 20184
+- DB Username: avnadmin
+- DB User Password: retrieve from Users
+- Databases: version-a, version-b....
+
+**S3 Bucket:**
+
+- Your S3 Access Key: ....
+- Your S3 Secret Key: ....
+- S3-Endpoint: For example, if you're in Germany, it would be https://s3.de.io.cloud.ovh.net/.
+
+**Webhook (optional):**
+
+- Endpoint: https://webhook.site/your-unique-id..
+
+**Encryption Key:**
+
+- A random string of characters that you will use to encrypt the backup files.
 
 ## Overview
 
@@ -71,8 +91,6 @@ docker run --env-file .env ghcr.io/la-cc/k8s-pg-s3-cronjob:0.0.0
 
 3. **Kubernetes Deployment:**
 
-WIP!!!
-
 For a Kubernetes deployment, create a `CronJob` resource, along with `Secret` and `ConfigMap` resources, to manage the environment variables and backup schedule.
 
 ### Kubernetes Resources
@@ -82,6 +100,15 @@ For a Kubernetes deployment, create a `CronJob` resource, along with `Secret` an
 - **CronJob**: Automates the backup process based on a defined schedule.
 
 Consult the Kubernetes documentation to create these resources according to the specified environment variables.
+
+4. **Helm Deployment:**
+
+For a Helm deployment, use the provided Helm chart to deploy the CronJob to your Kubernetes cluster.
+You can do it with the following command:
+
+```sh
+helm template k8s-pg-s3-cronjob k8s/helm/. | k apply -f -
+```
 
 ## Security
 
