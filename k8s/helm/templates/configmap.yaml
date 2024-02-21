@@ -5,7 +5,6 @@ metadata:
 data:
   AWS_S3_ENDPOINT_URL: {{ .Values.config.AWS_S3_ENDPOINT_URL }}
   AWS_S3_BUCKET: {{ .Values.config.AWS_S3_BUCKET }}
-  DATABASE_USER: {{ .Values.config.DATABASE_USER }}
   DATABASE_HOSTNAME: {{ .Values.config.DATABASE_HOSTNAME }}
   DATABASE_NAMES: {{ .Values.config.DATABASE_NAMES }}
   DATABASE_PORT: {{ .Values.config.DATABASE_PORT }}

@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: pg-backup-job
+  name: pg-backup
 spec:
   schedule: "* 5 * * *"
   jobTemplate:
