@@ -11,6 +11,7 @@ RUN apk add --no-cache \
     openssl \
     zip \
     git \
+    p7zip \
     curl \
     groff \
     less \
@@ -25,6 +26,7 @@ RUN apk add --no-cache \
     && pip install awscli \
     && pip install awscli awscli-plugin-endpoint \
     && apk del .build-deps
+
 
 # Second stage: Setup with non-root user
 FROM python:3.11-alpine
@@ -61,7 +63,9 @@ RUN apk add --no-cache \
     postgresql-client \
     openssl \
     curl \
-    zip
+    zip \
+    libstdc++ \
+    libgcc
 
 
 # Copy installed binaries and libraries from the builder stage
@@ -71,6 +75,7 @@ COPY --from=builder /usr/bin/pg_dump /usr/bin/pg_dump
 COPY --from=builder /usr/bin/openssl /usr/bin/openssl
 COPY --from=builder /usr/bin/curl /usr/bin/curl
 COPY --from=builder /usr/bin/zip /usr/bin/zip
+COPY --from=builder /usr/bin/7z /usr/bin/7z
 
 
 # Create a non-root user 'backupuser'
