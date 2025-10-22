@@ -1,13 +1,15 @@
-# First stage: Install tools as root
-FROM python:3.11-alpine as builder
+# --- Stage 1: PostgreSQL 18 Clients extrahieren (musl-kompatibel) ---
+FROM postgres:18.0-alpine AS pg18
+
+
+# --- Stage 2: Builder ---
+FROM python:3.11-alpine AS builder
 
 LABEL MAINTAINER="la-cc@github"
 LABEL org.opencontainers.image.source="https://github.com/la-cc/k8s-pg-to-s3-cronjob"
 LABEL EMAIL="artem@lajko.dev"
 
-# Install build dependencies
 RUN apk add --no-cache \
-    postgresql-client \
     openssl \
     zip \
     git \
@@ -15,23 +17,27 @@ RUN apk add --no-cache \
     curl \
     groff \
     less \
-    && apk add --no-cache --virtual .build-deps \
+ && apk add --no-cache --virtual .build-deps \
     gcc \
     musl-dev \
     libffi-dev \
     openssl-dev \
     python3-dev \
     cargo \
-    && pip install --upgrade pip \
-    && pip install awscli \
-    && pip install awscli awscli-plugin-endpoint \
-    && apk del .build-deps
+ && pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir awscli awscli-plugin-endpoint \
+ && apk del .build-deps
+
+# Get PostgreSQL 18 client binaries and libraries from pg18
+COPY --from=pg18 /usr/local/bin/psql /usr/local/bin/psql
+COPY --from=pg18 /usr/local/bin/pg_dump /usr/local/bin/pg_dump
+COPY --from=pg18 /usr/local/bin/pg_dumpall /usr/local/bin/pg_dumpall
+COPY --from=pg18 /usr/local/lib/ /usr/local/lib/
 
 
-# Second stage: Setup with non-root user
+# --- Stage 3: Runtime ---
 FROM python:3.11-alpine
 
-# Metadata as defined in OCI image spec annotations
 LABEL MAINTAINER="la-cc@github"
 LABEL org.opencontainers.image.source="https://github.com/la-cc/k8s-pg-to-s3-cronjob"
 LABEL EMAIL="artem@lajko.dev"
@@ -60,18 +66,25 @@ ENV ENCRYPTION_KEY=""
 
 # Install runtime dependencies
 RUN apk add --no-cache \
-    postgresql-client \
     openssl \
     curl \
     zip \
     libstdc++ \
-    libgcc
+    libgcc \
+    lz4-libs \
+    openldap \
+    libedit \
+    zstd-libs
 
+# PostgreSQL 18 Clients take over
+COPY --from=pg18 /usr/local/bin/pg_dump /usr/local/bin/pg_dump
+COPY --from=pg18 /usr/local/bin/psql /usr/local/bin/psql
+COPY --from=pg18 /usr/local/bin/pg_dumpall /usr/local/bin/pg_dumpall
+COPY --from=pg18 /usr/local/lib/ /usr/local/lib/
 
-# Copy installed binaries and libraries from the builder stage
+# Take over AWS CLI and Python libs
 COPY --from=builder /usr/local/bin/aws /usr/local/bin/aws
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/bin/pg_dump /usr/bin/pg_dump
 COPY --from=builder /usr/bin/openssl /usr/bin/openssl
 COPY --from=builder /usr/bin/curl /usr/bin/curl
 COPY --from=builder /usr/bin/zip /usr/bin/zip
@@ -83,12 +96,12 @@ RUN addgroup -S backupuser && adduser -S backupuser -G backupuser
 
 # Set work directory and switch to non-root user
 WORKDIR /home/backupuser
-COPY /build/docker/scripts/entrypoint.sh  .
+COPY /build/docker/scripts/entrypoint.sh .
 
 USER backupuser
 
 # Adjust the ENTRYPOINT as needed, for now, it's set to keep the container running
 ENTRYPOINT [ "./entrypoint.sh", "-f"]
 
-# For debugging purposes, keep the container running
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
+# ENTRYPOINT [ "./entrypoint.sh", "-f" ]
+# ENTRYPOINT ["tail", "-f", "/dev/null"]
