@@ -1,5 +1,7 @@
 #!/bin/sh
 
+TEMP_PATH="/tmp"
+
 # Function to zip and encrypt a file
 encrypt_file() {
     local file_to_encrypt="$1"
@@ -20,6 +22,7 @@ init_aws_config() {
     # Set the AWS credentials
     aws configure set aws_access_key_id "$AWS_S3_ACCESS_KEY_ID"
     aws configure set aws_secret_access_key "$AWS_S3_SECRET_ACCESS_KEY"
+    aws configure set s3.addressing_style path
 }
 
 # Function to create a dump of each database
@@ -29,9 +32,9 @@ backup_databases() {
     for db_name in $DATABASE_NAMES; do
         echo "Creating dump for: $db_name"
         # Define the filename for the dump
-        dump_file="${PWD}/${db_name}_$(date +%Y-%m-%d).sqlc"
+        dump_file="${TEMP_PATH}/${db_name}_$(date +%Y-%m-%d).sqlc"
         # Create the dump
-        PGPASSWORD=$DATABASE_PASSWORD pg_dump -h $DATABASE_HOSTNAME -p $DATABASE_PORT -U $DATABASE_USER -F c -b -v -f "$dump_file" $db_name
+        PGPASSWORD=$DATABASE_PASSWORD pg_dump -h "$DATABASE_HOSTNAME" -p "$DATABASE_PORT" -U "$DATABASE_USER" -F c -b -v -f "$dump_file" "$db_name"
         if [ $? -eq 0 ]; then
             echo "Backup successful: ${db_name}"
             # Call encrypt_file function to zip and encrypt the dump file
@@ -45,9 +48,13 @@ backup_databases() {
 
 # New function to upload encrypted files
 upload_encrypted_files() {
-    for file in *.zip; do
+    for file in "${TEMP_PATH}"/*.zip; do
+        [ -e "$file" ] || continue
+
         echo "Uploading: $file"
-        aws s3 cp "$file" "s3://${AWS_S3_BUCKET}/$file" --endpoint-url "$AWS_S3_ENDPOINT_URL"
+
+        aws s3 cp "$file" "s3://${AWS_S3_BUCKET}/$(basename "$file")" --endpoint-url "$AWS_S3_ENDPOINT_URL"
+
         if [ $? -eq 0 ]; then
             echo "Upload successful: $file"
             # Optionally, remove the local file to save space
@@ -55,7 +62,7 @@ upload_encrypted_files() {
             # Check if ENABLE_WEBHOOK_ENDPOINT is set to true before calling push_to_webhook_endpoint
             if [ "$ENABLE_WEBHOOK_ENDPOINT" = "true" ]; then
                 # Call push_to_webhook_endpoint function to notify the webhook about the upload
-                push_to_webhook_endpoint "$file"
+                push_to_webhook_endpoint "$(basename "$file")"
             fi
         else
             echo "Error during upload of: $file"
