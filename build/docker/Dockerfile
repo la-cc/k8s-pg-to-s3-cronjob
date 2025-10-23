@@ -1,4 +1,4 @@
-# --- Stage 1: PostgreSQL 18 Clients extrahieren (musl-kompatibel) ---
+# --- Stage 1: Extract PostgreSQL 18 clients ---
 FROM postgres:18.0-alpine AS pg18
 
 
@@ -28,7 +28,7 @@ RUN apk add --no-cache \
  && pip install --no-cache-dir awscli awscli-plugin-endpoint \
  && apk del .build-deps
 
-# Get PostgreSQL 18 client binaries and libraries from pg18
+# Get PostgreSQL 18 client binaries and cp libraries from pg18
 COPY --from=pg18 /usr/local/bin/psql /usr/local/bin/psql
 COPY --from=pg18 /usr/local/bin/pg_dump /usr/local/bin/pg_dump
 COPY --from=pg18 /usr/local/bin/pg_dumpall /usr/local/bin/pg_dumpall

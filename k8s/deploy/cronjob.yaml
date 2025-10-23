@@ -15,6 +15,9 @@ spec:
           containers:
             - name: pg-backup
               image: ghcr.io/la-cc/k8s-pg-to-s3-cronjob:latest
+              env:
+              - name: HOME
+                value: /tmp
               envFrom:
                 - secretRef:
                     name: pg-backup-secrets
